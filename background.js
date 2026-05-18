@@ -236,33 +236,41 @@ async function queryTargetTabs() {
 }
 
 async function ensureContentScriptReady(tabId) {
+  bgLog("ensureContentScriptReady: tabId=", tabId);
   try {
     const ping = await chrome.tabs.sendMessage(tabId, { type: "WHATNOT_PING" });
-    if (ping?.ok) return true;
-  } catch {
-    // receiver likely missing; try injecting below
+    if (ping?.ok) {
+      bgLog("ensureContentScriptReady: first ping OK");
+      return true;
+    }
+    bgLog("ensureContentScriptReady: first ping no-ok response:", ping);
+  } catch (e) {
+    bgLog("ensureContentScriptReady: first ping threw:", e?.message);
   }
 
   try {
-    // Clear any stale double-injection guard left by an orphaned context
-    // (e.g. after extension reload the old content script can't respond but its
-    // window.__whatnotOrdersWatcherLoaded flag still blocks a fresh injection)
+    bgLog("ensureContentScriptReady: resetting guard...");
     await chrome.scripting.executeScript({
       target: { tabId },
       func: () => { window.__whatnotOrdersWatcherLoaded = false; }
     });
+    bgLog("ensureContentScriptReady: guard reset OK, injecting content.js...");
     await chrome.scripting.executeScript({
       target: { tabId },
       files: ["content.js"]
     });
-  } catch {
+    bgLog("ensureContentScriptReady: content.js injected OK");
+  } catch (err) {
+    bgLog("ensureContentScriptReady: executeScript FAILED:", err?.message);
     return false;
   }
 
   try {
     const ping = await chrome.tabs.sendMessage(tabId, { type: "WHATNOT_PING" });
+    bgLog("ensureContentScriptReady: second ping result:", ping);
     return Boolean(ping?.ok);
-  } catch {
+  } catch (e) {
+    bgLog("ensureContentScriptReady: second ping threw:", e?.message);
     return false;
   }
 }
