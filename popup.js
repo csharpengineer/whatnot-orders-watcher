@@ -1,3 +1,5 @@
+document.documentElement.style.height = screen.availHeight + "px";
+
 const enabledEl = document.getElementById("enabled");
 const refreshMinutesEl = document.getElementById("refreshMinutes");
 const openPageEl = document.getElementById("openPage");

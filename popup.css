@@ -33,7 +33,7 @@ body {
 
 .container {
   width: 420px;
-  height: 100vh;
+  height: 100%;
   padding: 14px 14px 0;
   box-sizing: border-box;
   display: flex;
