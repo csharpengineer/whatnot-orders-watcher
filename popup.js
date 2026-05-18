@@ -16,10 +16,10 @@ let latestStatus = {
 };
 
 function formatScanTime(timestamp) {
-  if (!timestamp) return "Last successful scan: never";
+  if (!timestamp) return "Last successful scan:\nnever";
   const date = new Date(timestamp);
-  if (Number.isNaN(date.getTime())) return "Last successful scan: unknown";
-  return `Last successful scan: ${date.toLocaleString()}`;
+  if (Number.isNaN(date.getTime())) return "Last successful scan:\nunknown";
+  return `Last successful scan:\n${date.toLocaleString()}`;
 }
 
 function formatOrderDate(order) {
