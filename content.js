@@ -2,6 +2,14 @@
 if (!window.__whatnotOrdersWatcherLoaded) {
 window.__whatnotOrdersWatcherLoaded = true;
 
+// If the extension runtime isn't available yet (race on first load / orphaned context),
+// reset the flag so the background can reinject once the runtime is ready.
+if (!chrome?.runtime) {
+  window.__whatnotOrdersWatcherLoaded = false;
+  // eslint-disable-next-line no-useless-return
+  return;
+}
+
 function isOnWhatnotPage() {
   try {
     return new URL(window.location.href).origin === "https://www.whatnot.com";
