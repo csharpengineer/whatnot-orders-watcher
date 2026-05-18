@@ -490,7 +490,7 @@ async function processCapturedOrders(orders) {
   }
 }
 
-async function refreshAndCheckOrders() {
+async function refreshAndCheckOrders(isRetry = false) {
   const settings = await getSettings();
   if (!settings.enabled) return;
 
@@ -504,6 +504,10 @@ async function refreshAndCheckOrders() {
     await processCapturedOrders(orders);
   } catch {
     // content script may not be ready yet
+    if (!isRetry) {
+      // One quick retry while the service worker is still active
+      setTimeout(() => refreshAndCheckOrders(true).catch(() => {}), 8000);
+    }
     return;
   } finally {
     isScanInProgress = false;

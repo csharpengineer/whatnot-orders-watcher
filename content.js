@@ -433,13 +433,16 @@ function buildReplayRequest(template, fallbackUrl) {
   const replayHeaders = {
     accept: headers.accept || "*/*",
     "content-type": headers["content-type"] || "application/json",
-    authorization: headers.authorization || "Cookie",
     "x-client-timezone": headers["x-client-timezone"] || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     "x-whatnot-app": headers["x-whatnot-app"] || "whatnot-web",
     "x-whatnot-app-context": headers["x-whatnot-app-context"] || "next-js/browser",
     "x-whatnot-app-pathname": headers["x-whatnot-app-pathname"] || window.location.pathname || "/",
     "x-whatnot-app-screen": headers["x-whatnot-app-screen"] || window.location.pathname || "/"
   };
+
+  if (headers.authorization) {
+    replayHeaders.authorization = headers.authorization;
+  }
 
   const optionalHeaders = [
     "x-whatnot-app-pathname",
