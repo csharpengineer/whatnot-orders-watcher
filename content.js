@@ -1,3 +1,7 @@
+// Prevent duplicate injection (manifest auto-inject + scripting.executeScript fallback can both fire)
+if (!window.__whatnotOrdersWatcherLoaded) {
+window.__whatnotOrdersWatcherLoaded = true;
+
 function isOnWhatnotPage() {
   try {
     return new URL(window.location.href).origin === "https://www.whatnot.com";
@@ -629,3 +633,5 @@ if (document.readyState === "complete") {
 } else {
   window.addEventListener("load", notifyPageRefreshed, { once: true });
 }
+
+} // end double-injection guard
