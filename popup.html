@@ -7,48 +7,48 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <main class="container">
-      <h1>Whatnot Orders Watcher</h1>
+    <div class="appLayout">
+      <aside class="sidebar">
+        <h1>Whatnot Orders Watcher</h1>
 
-      <section class="panel controlsPanel">
-        <h2 class="panelHeader controlsHeader">
-          <span>Controls</span>
-          <button id="openPage" type="button" class="openWhatnotButton">Open Whatnot</button>
-        </h2>
-        <div class="panelBody controlsContent">
-          <div class="controlsGrid">
-            <label class="controlField controlToggleField" for="enabled">
-              <span class="fieldLabel">Service enabled</span>
-              <span class="toggleControl" aria-hidden="true">
-                <input id="enabled" type="checkbox" />
-                <span class="toggleSlider"></span>
-              </span>
-            </label>
+        <section class="panel controlsPanel">
+          <h2 class="panelHeader controlsHeader">
+            <span>Controls</span>
+            <button id="openPage" type="button" class="openWhatnotButton">Open Whatnot</button>
+          </h2>
+          <div class="panelBody controlsContent">
+            <div class="controlsGrid">
+              <label class="controlField controlToggleField" for="enabled">
+                <span class="fieldLabel">Service enabled</span>
+                <span class="toggleControl" aria-hidden="true">
+                  <input id="enabled" type="checkbox" />
+                  <span class="toggleSlider"></span>
+                </span>
+              </label>
 
-            <label class="controlField" for="refreshMinutes">
-              <span class="fieldLabel">Refresh interval (minutes)</span>
-              <input id="refreshMinutes" type="number" min="0.25" step="0.25" />
-            </label>
+              <label class="controlField" for="refreshMinutes">
+                <span class="fieldLabel">Refresh interval (minutes)</span>
+                <input id="refreshMinutes" type="number" min="0.25" step="0.25" />
+              </label>
+            </div>
+
+            <section class="statusBlock">
+              <p id="countdownState" class="hint"></p>
+              <p id="scanState" class="hint"></p>
+            </section>
           </div>
+        </section>
+      </aside>
 
-          <section class="statusBlock">
-            <p id="countdownState" class="hint"></p>
-            <p id="scanState" class="hint"></p>
-          </section>
+      <main class="ordersMain">
+        <div class="ordersHeader">
+          <h2>Found orders</h2>
         </div>
-      </section>
-
-      <section class="panel ordersPanel">
-        <h2 class="panelHeader">Found orders</h2>
-        <div class="panelBody">
-          <div class="ordersScroll">
-            <ul id="ordersList" class="ordersList"></ul>
-          </div>
+        <div class="ordersScroll">
+          <div id="ordersList" class="ordersGrid"></div>
         </div>
-      </section>
-
-      <div>&nbsp;</div>
-    </main>
+      </main>
+    </div>
     <script src="popup.js"></script>
   </body>
 </html>

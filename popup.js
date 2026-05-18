@@ -79,25 +79,27 @@ function renderOrders(orders) {
   ordersListEl.textContent = "";
 
   if (!Array.isArray(orders) || !orders.length) {
-    const empty = document.createElement("li");
+    const empty = document.createElement("div");
+    empty.className = "emptyMessage";
     empty.textContent = "No orders captured yet.";
     ordersListEl.appendChild(empty);
     return;
   }
 
   for (const order of orders) {
-    const item = document.createElement("li");
+    const card = document.createElement("div");
+    card.className = "orderCard";
 
-    const row = document.createElement("div");
-    row.className = "orderRow";
+    const imageWrap = document.createElement("div");
+    imageWrap.className = "cardImageWrap";
+    const img = document.createElement("img");
+    img.className = "cardImage";
+    img.src = order.iconUrl || DEFAULT_WHATNOT_PLACEHOLDER_IMAGE_URL;
+    img.alt = "Order item";
+    imageWrap.appendChild(img);
 
-    const icon = document.createElement("img");
-    icon.className = "orderIcon";
-    icon.src = order.iconUrl || DEFAULT_WHATNOT_PLACEHOLDER_IMAGE_URL;
-    icon.alt = "Order item";
-
-    const content = document.createElement("div");
-    content.className = "orderContent";
+    const cardBody = document.createElement("div");
+    cardBody.className = "cardBody";
 
     const meta = document.createElement("div");
     meta.className = "orderMeta";
@@ -189,6 +191,17 @@ function renderOrders(orders) {
     meta.appendChild(purchased);
     meta.appendChild(dateLine);
 
+    if (order.description) {
+      const descLine = document.createElement("div");
+      descLine.className = "orderLine";
+
+      const descText = document.createElement("span");
+      descText.className = "orderDescText";
+      descText.textContent = order.description;
+      descLine.appendChild(descText);
+      meta.appendChild(descLine);
+    }
+
     if (order.shippingServiceName) {
       const shippedLine = document.createElement("div");
       shippedLine.className = "orderLine";
@@ -222,22 +235,10 @@ function renderOrders(orders) {
       meta.appendChild(shippedLine);
     }
 
-    if (order.description) {
-      const descLine = document.createElement("div");
-      descLine.className = "orderLine";
-
-      const descText = document.createElement("span");
-      descText.className = "orderDescText";
-      descText.textContent = order.description;
-      descLine.appendChild(descText);
-      meta.appendChild(descLine);
-    }
-
-    content.appendChild(meta);
-    row.appendChild(icon);
-    row.appendChild(content);
-    item.appendChild(row);
-    ordersListEl.appendChild(item);
+    cardBody.appendChild(meta);
+    card.appendChild(imageWrap);
+    card.appendChild(cardBody);
+    ordersListEl.appendChild(card);
   }
 }
 

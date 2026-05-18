@@ -26,21 +26,39 @@
 body {
   margin: 0;
   padding: 0;
-  height: 100vh;
   overflow: hidden;
   font-family: "Segoe UI", Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
 }
 
-.container {
-  width: 420px;
+.appLayout {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
   height: 100%;
-  padding: 14px 14px 0;
+  overflow-y: auto;
+  padding: 16px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+
+.ordersMain {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
@@ -50,13 +68,6 @@ body {
   background: var(--surface);
   overflow: hidden;
   flex-shrink: 0;
-}
-
-.panel.ordersPanel {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
 }
 
 .panelHeader {
@@ -251,59 +262,79 @@ input[type="number"] {
   text-align: right;
 }
 
-.ordersPanel .panelHeader {
+.ordersHeader {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
   background: var(--surface-muted);
 }
 
-.ordersPanel {
-  margin-bottom: 14px;
-}
-
-.ordersPanel .panelBody {
-  padding: 0;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+.ordersHeader h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
 }
 
 .ordersScroll {
   flex: 1;
   min-height: 0;
-  border: none;
-  border-radius: 0;
   overflow-y: auto;
-  background: transparent;
   padding: 12px;
 }
 
-.ordersList {
-  list-style: none;
-  margin: 0;
-  padding: 0 0 10px;
+.ordersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+
+.orderCard {
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface);
   overflow: hidden;
-}
-
-.ordersList li {
-  padding: 10px;
-  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
   font-size: 12px;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
-.ordersList li:last-child {
-  border-bottom: none;
+.cardImageWrap {
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--surface-muted);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.cardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cardBody {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.emptyMessage {
+  grid-column: 1 / -1;
+  padding: 20px;
+  color: var(--text-muted);
+  font-size: 13px;
 }
 
 .orderTitle {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   overflow: hidden;
   font-weight: 700;
   margin-bottom: 2px;
@@ -313,25 +344,6 @@ input[type="number"] {
 
 .orderTitle:hover {
   text-decoration: underline;
-}
-
-.orderRow {
-  display: flex;
-  gap: 10px;
-}
-
-.orderIcon {
-  width: 44px;
-  height: 44px;
-  object-fit: cover;
-  border-radius: 8px;
-  flex-shrink: 0;
-  background: var(--surface-muted);
-}
-
-.orderContent {
-  min-width: 0;
-  flex: 1;
 }
 
 .orderMeta {
@@ -477,12 +489,4 @@ input[type="number"] {
   display: block;
 }
 
-/* Visually reorder description to appear under the title — purely CSS, no DOM change. */
-/* Assign explicit order values to all .orderMeta children, then override desc to 3.   */
-.orderMeta > :nth-child(1) { order: 1; } /* sellerRow  */
-.orderMeta > :nth-child(2) { order: 2; } /* title      */
-.orderMeta > :nth-child(3) { order: 4; } /* purchased  */
-.orderMeta > :nth-child(4) { order: 5; } /* date       */
-.orderMeta > :nth-child(5) { order: 6; } /* shipped (or desc when no shipping) */
-.orderMeta > :nth-child(6) { order: 7; } /* desc (when both shipped + desc)    */
-.orderMeta > .orderLine:has(.orderDescText) { order: 3; }
+
