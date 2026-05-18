@@ -348,14 +348,28 @@ async function ensureContentScriptReady(tabId) {
 }
 
 async function sendMessageToWhatnotTab(tabId, message) {
+  // An orphaned content script (after extension reload) can receive a message,
+  // return true (claiming an async response) and then never call sendResponse
+  // because its chrome.runtime is invalid.  That causes sendMessage to hang
+  // indefinitely.  Wrap every send with a 15-second timeout so a stuck orphaned
+  // handler is treated the same as a missing one.
+  const sendWithTimeout = (id, msg) =>
+    Promise.race([
+      chrome.tabs.sendMessage(id, msg),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("sendMessage timed out after 15s")), 15000)
+      )
+    ]);
+
   try {
-    return await chrome.tabs.sendMessage(tabId, message);
-  } catch {
+    return await sendWithTimeout(tabId, message);
+  } catch (e) {
+    bgLog("sendMessageToWhatnotTab: first send failed:", e?.message, "— recovering");
     const ready = await ensureContentScriptReady(tabId);
     if (!ready) {
       throw new Error("Could not establish connection to Whatnot page script");
     }
-    return chrome.tabs.sendMessage(tabId, message);
+    return sendWithTimeout(tabId, message);
   }
 }
 
