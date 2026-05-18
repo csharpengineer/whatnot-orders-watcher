@@ -261,9 +261,15 @@ async function loadStatus() {
 }
 
 async function saveSettings() {
+  if (!refreshMinutesEl.value.trim()) {
+    refreshMinutesEl.value = "1";
+  }
+  const refreshMinutes = Math.max(0.25, Number(refreshMinutesEl.value) || 1);
+  refreshMinutesEl.value = String(refreshMinutes);
+
   const payload = {
     enabled: enabledEl.checked,
-    refreshMinutes: Number(refreshMinutesEl.value)
+    refreshMinutes
   };
 
   const response = await chrome.runtime.sendMessage({
@@ -289,8 +295,19 @@ async function saveSettings() {
   }
 }
 
-enabledEl.addEventListener("change", saveSettings);
+enabledEl.addEventListener("change", () => {
+  if (enabledEl.checked && !refreshMinutesEl.value.trim()) {
+    refreshMinutesEl.value = "1";
+  }
+  saveSettings();
+});
 refreshMinutesEl.addEventListener("change", saveSettings);
+refreshMinutesEl.addEventListener("blur", () => {
+  if (!refreshMinutesEl.value.trim()) {
+    refreshMinutesEl.value = "1";
+    saveSettings();
+  }
+});
 
 openPageEl.addEventListener("click", async () => {
   await chrome.runtime.sendMessage({ type: "WHATNOT_OPEN_TARGET" });
