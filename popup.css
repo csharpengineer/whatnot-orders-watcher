@@ -24,17 +24,17 @@
 }
 
 body {
-  margin: 0;
-  padding: 0;
+  margin: 0 0 14px 0;
   font-family: "Segoe UI", Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
+  padding: 0 0 14px 0;
 }
 
 .container {
   width: 420px;
-  height: 100%;
-  padding: 14px 14px 0;
+  max-height: 760px;
+  padding: 14px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -47,13 +47,6 @@ body {
   background: var(--surface);
   overflow: hidden;
   flex-shrink: 0;
-}
-
-.panel.ordersPanel {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
 }
 
 .panelHeader {
@@ -253,23 +246,13 @@ input[type="number"] {
 }
 
 .ordersPanel {
-  margin-bottom: 14px;
-}
-
-.ordersPanel .panelBody {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  margin-bottom: 10px;
 }
 
 .ordersScroll {
   border: none;
   border-radius: 0;
-  overflow-y: auto;
-  flex: 1;
-  min-height: 0;
+  overflow: visible;
   background: transparent;
   margin-bottom: 0;
 }
