@@ -284,7 +284,7 @@ input[type="number"] {
 
 .ordersGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(375px, 1fr));
   gap: 12px;
   align-content: start;
 }
@@ -302,7 +302,7 @@ input[type="number"] {
 
 .cardImageWrap {
   width: 100%;
-  aspect-ratio: 3 / 1;
+  aspect-ratio: 12 / 5;
   background: var(--surface-muted);
   overflow: hidden;
   flex-shrink: 0;
