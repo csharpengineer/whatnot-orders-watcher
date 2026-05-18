@@ -40,9 +40,9 @@
     return 0;
   };
 
-  const emitIfPurchasesPayload = (payload) => {
+  const emitIfPurchasesPayload = (payload, isOwnRequest = false) => {
     if (!hasPurchasesPayload(payload)) return;
-    window.postMessage({ source: SOURCE_TAG, type: MESSAGE_TYPE, payload }, "*");
+    window.postMessage({ source: SOURCE_TAG, type: MESSAGE_TYPE, payload, isOwnRequest }, "*");
   };
 
   const emitDebug = (event, details = {}) => {
@@ -135,8 +135,7 @@
     emitDebug("replay_requested", { url: requestUrl, method });
 
     try {
-      const fetchImpl = typeof window.fetch === "function" ? window.fetch : originalFetch;
-      const response = await fetchImpl.call(window, requestUrl, {
+      const response = await originalFetch.call(window, requestUrl, {
         method,
         headers,
         credentials: "include",
@@ -161,7 +160,7 @@
         orderCount: getOrderCount(payload)
       });
 
-      emitIfPurchasesPayload(payload);
+      emitIfPurchasesPayload(payload, true);
     } catch (error) {
       emitDebug("replay_error", {
         url: requestUrl,

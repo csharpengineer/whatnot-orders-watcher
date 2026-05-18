@@ -10,7 +10,8 @@ const defaultSettings = {
 
 const defaultScanStatus = {
   lastScanAt: 0,
-  lastOrders: []
+  lastOrders: [],
+  lastNotifiedAt: 0
 };
 
 const SEEN_ORDER_IDS_STORAGE_KEY = "seenOrderIds";
@@ -115,6 +116,16 @@ function getOrderIdsFromOrders(orders) {
     ids.push(id);
   }
   return ids;
+}
+
+function getNewestOrderTime(orders) {
+  if (!Array.isArray(orders) || !orders.length) return 0;
+  let newest = 0;
+  for (const order of orders) {
+    const t = order.dateFull ? new Date(order.dateFull).getTime() : 0;
+    if (t > newest) newest = t;
+  }
+  return newest;
 }
 
 async function ensureKnownOrderIdsLoaded() {
@@ -379,12 +390,17 @@ function sanitizeOrdersForStorage(orders) {
 
 async function updateScanStatus(orders) {
   const sanitizedOrders = sanitizeOrdersForStorage(orders);
+  const sortedOrders = sanitizedOrders.slice().sort((a, b) => {
+    const ta = a.dateFull ? new Date(a.dateFull).getTime() : 0;
+    const tb = b.dateFull ? new Date(b.dateFull).getTime() : 0;
+    return tb - ta;
+  });
   const payload = {
     lastScanAt: Date.now()
   };
 
-  if (sanitizedOrders.length > 0) {
-    payload.lastOrders = sanitizedOrders;
+  if (sortedOrders.length > 0) {
+    payload.lastOrders = sortedOrders;
   }
 
   await chrome.storage.local.set({
@@ -426,9 +442,16 @@ async function processCapturedOrders(orders) {
   const orderIds = getOrderIdsFromOrders(orders);
   if (!orderIds.length) return;
 
+  const stored = await chrome.storage.local.get({ lastNotifiedAt: 0 });
+  const lastNotifiedAt = Number(stored.lastNotifiedAt || 0);
+
   if (knownOrderIds.size === 0) {
     knownOrderIds = new Set(orderIds);
     await persistKnownOrderIds();
+    const newestTime = getNewestOrderTime(orders);
+    if (newestTime > lastNotifiedAt) {
+      await chrome.storage.local.set({ lastNotifiedAt: newestTime });
+    }
     return;
   }
 
@@ -441,7 +464,10 @@ async function processCapturedOrders(orders) {
     if (!knownOrderIds.has(orderId)) {
       knownOrderIds.add(orderId);
       hasKnownOrdersChanges = true;
-      newOrders.push(order);
+      const orderTime = order.dateFull ? new Date(order.dateFull).getTime() : 0;
+      if (orderTime > lastNotifiedAt) {
+        newOrders.push(order);
+      }
     }
   }
 
@@ -449,7 +475,20 @@ async function processCapturedOrders(orders) {
     await persistKnownOrderIds();
   }
 
-  await notifyNewOrders(newOrders);
+  if (newOrders.length > 0) {
+    newOrders.sort((a, b) => {
+      const ta = a.dateFull ? new Date(a.dateFull).getTime() : 0;
+      const tb = b.dateFull ? new Date(b.dateFull).getTime() : 0;
+      return tb - ta;
+    });
+    const newestNotifiedTime = Math.max(
+      ...newOrders.map((o) => (o.dateFull ? new Date(o.dateFull).getTime() : 0))
+    );
+    await notifyNewOrders(newOrders);
+    if (newestNotifiedTime > lastNotifiedAt) {
+      await chrome.storage.local.set({ lastNotifiedAt: newestNotifiedTime });
+    }
+  }
 }
 
 async function refreshAndCheckOrders() {

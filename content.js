@@ -214,6 +214,41 @@ let latestOrdersByTitle = new Map();
 let isGraphQlPollInFlight = false;
 let lastFetchedGraphQlUrl = "";
 
+const ORDERS_SESSION_KEY = "whatnot-orders-watcher:orders";
+
+function loadOrdersFromSession() {
+  try {
+    const stored = sessionStorage.getItem(ORDERS_SESSION_KEY);
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveOrdersToSession(orders) {
+  try {
+    sessionStorage.setItem(ORDERS_SESSION_KEY, JSON.stringify(orders));
+  } catch {}
+}
+
+function sortOrdersByDateDesc(orders) {
+  return orders.slice().sort((a, b) => {
+    const ta = a.dateFull ? new Date(a.dateFull).getTime() : 0;
+    const tb = b.dateFull ? new Date(b.dateFull).getTime() : 0;
+    return tb - ta;
+  });
+}
+
+(function initOrdersFromSession() {
+  const stored = loadOrdersFromSession();
+  if (!stored.length) return;
+  latestOrders = stored;
+  latestOrdersById = new Map(stored.map((o) => [o.id, o]));
+  latestOrdersByTitle = new Map(stored.map((o) => [normalizeTitleKey(o.title), o]));
+})();
+
 const fallbackPurchasesBody = JSON.stringify({
   operationName: "GetMyPurchases",
   variables: {
@@ -355,9 +390,10 @@ function mergeGraphQlPayload(payload, sourceEvent, sourceUrl = "") {
     return;
   }
 
-  latestOrders = orders;
-  latestOrdersById = new Map(orders.map((order) => [order.id, order]));
-  latestOrdersByTitle = new Map(orders.map((order) => [normalizeTitleKey(order.title), order]));
+  latestOrders = sortOrdersByDateDesc(orders);
+  latestOrdersById = new Map(latestOrders.map((order) => [order.id, order]));
+  latestOrdersByTitle = new Map(latestOrders.map((order) => [normalizeTitleKey(order.title), order]));
+  saveOrdersToSession(latestOrders);
   graphQlDebug.lastError = "";
 }
 
@@ -548,7 +584,9 @@ window.addEventListener("message", (event) => {
   }
 
   if (data.type === GRAPHQL_CAPTURE_MESSAGE) {
-    mergeGraphQlPayload(data.payload, "payload_merged");
+    if (data.isOwnRequest) {
+      mergeGraphQlPayload(data.payload, "payload_merged");
+    }
   }
 });
 
