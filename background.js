@@ -25,6 +25,14 @@ let lastGetMyPurchasesTemplate = null;
 const pendingPurchasesRequests = new Map();
 const whatnotTabLoadedAt = new Map();
 
+const bgDebugLog = [];
+function bgLog(...args) {
+  const msg = `[${new Date().toLocaleTimeString()}] ${args.map(a => (typeof a === "object" ? JSON.stringify(a) : String(a))).join(" ")}`;
+  console.log("[WOW]", msg);
+  bgDebugLog.push(msg);
+  if (bgDebugLog.length > 40) bgDebugLog.shift();
+}
+
 function isGetMyPurchasesUrl(url) {
   return (
     typeof url === "string" &&
@@ -165,20 +173,25 @@ async function updateAlarmFromSettings() {
   const settings = await getSettings();
   const existingAlarm = await chrome.alarms.get(ALARM_NAME);
 
+  bgLog("updateAlarmFromSettings: enabled=", settings.enabled, "isScanInProgress=", isScanInProgress, "existingAlarm=", Boolean(existingAlarm));
+
   if (isScanInProgress) {
     if (existingAlarm) {
       await chrome.alarms.clear(ALARM_NAME);
     }
+    bgLog("updateAlarmFromSettings: scan in progress → cleared alarm");
     return;
   }
 
   const hasWhatnotTab = await hasAnyWhatnotTab();
   const shouldRun = settings.enabled && hasWhatnotTab;
+  bgLog("updateAlarmFromSettings: hasWhatnotTab=", hasWhatnotTab, "shouldRun=", shouldRun);
 
   if (!shouldRun) {
     if (existingAlarm) {
       await chrome.alarms.clear(ALARM_NAME);
     }
+    bgLog("updateAlarmFromSettings: shouldRun=false → no alarm");
     return;
   }
 
@@ -187,19 +200,23 @@ async function updateAlarmFromSettings() {
   const periodMatches = Math.abs(currentPeriod - desiredPeriod) < 0.0001;
 
   if (existingAlarm && periodMatches) {
+    bgLog("updateAlarmFromSettings: alarm already correct, period=", desiredPeriod);
     return;
   }
 
   await chrome.alarms.create(ALARM_NAME, {
     periodInMinutes: settings.refreshMinutes
   });
+  bgLog("updateAlarmFromSettings: created alarm period=", settings.refreshMinutes);
 }
 
 async function ensureInitialized() {
+  bgLog("ensureInitialized: called, isInitialized=", isInitialized);
   if (isInitialized) return;
   isInitialized = true;
   await ensureKnownOrderIdsLoaded();
   await updateAlarmFromSettings();
+  bgLog("ensureInitialized: done");
 }
 
 async function queryTargetTab() {
@@ -494,25 +511,35 @@ async function processCapturedOrders(orders) {
 
 async function refreshAndCheckOrders(isRetry = false) {
   const settings = await getSettings();
-  if (!settings.enabled) return;
+  bgLog("refreshAndCheckOrders: start isRetry=", isRetry, "enabled=", settings.enabled, "isScanInProgress=", isScanInProgress);
+  if (!settings.enabled) {
+    bgLog("refreshAndCheckOrders: skipped – not enabled");
+    return;
+  }
 
-  if (isScanInProgress) return;
+  if (isScanInProgress) {
+    bgLog("refreshAndCheckOrders: skipped – already in progress");
+    return;
+  }
   isScanInProgress = true;
 
   await chrome.alarms.clear(ALARM_NAME);
 
   try {
     const orders = await captureOrdersFromAnyTab();
+    bgLog("refreshAndCheckOrders: captureOrdersFromAnyTab succeeded, count=", orders?.length);
     await processCapturedOrders(orders);
-  } catch {
-    // content script may not be ready yet
+    bgLog("refreshAndCheckOrders: done");
+  } catch (err) {
+    bgLog("refreshAndCheckOrders: CATCH error=", err?.message || String(err), "isRetry=", isRetry);
     if (!isRetry) {
-      // One quick retry while the service worker is still active
+      bgLog("refreshAndCheckOrders: scheduling 8s retry");
       setTimeout(() => refreshAndCheckOrders(true).catch(() => {}), 8000);
     }
     return;
   } finally {
     isScanInProgress = false;
+    bgLog("refreshAndCheckOrders: finally – isScanInProgress reset, calling updateAlarmFromSettings");
     await updateAlarmFromSettings();
   }
 }
@@ -539,6 +566,10 @@ ensureInitialized().catch(() => {
 
 chrome.storage.onChanged.addListener(async (changes, areaName) => {
   if (areaName !== "local") return;
+  const summary = Object.fromEntries(
+    Object.entries(changes).map(([k, v]) => [k, { old: v.oldValue, new: v.newValue }])
+  );
+  bgLog("storage.onChanged:", summary);
   if (changes.enabled || changes.refreshMinutes) {
     await updateAlarmFromSettings();
   }
@@ -675,7 +706,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           orders: sanitizeOrdersForStorage(scanStatus.lastOrders),
           graphqlDebug,
           isOnTargetPage: isTargetUrl(active?.url),
-          hasTargetTab: targetTabs.length > 0
+          hasTargetTab: targetTabs.length > 0,
+          bgDebugLog: [...bgDebugLog]
         });
       })
       .catch(() => {
@@ -687,7 +719,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           orders: [],
           graphqlDebug: { available: false, reason: "Status request failed" },
           isOnTargetPage: false,
-          hasTargetTab: false
+          hasTargetTab: false,
+          bgDebugLog: [...bgDebugLog]
         });
       });
     return true;
@@ -696,14 +729,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === "WHATNOT_SAVE_SETTINGS") {
     const enabled = Boolean(message.payload?.enabled);
     const refreshMinutes = normalizeRefreshMinutes(message.payload?.refreshMinutes);
+    bgLog("WHATNOT_SAVE_SETTINGS received: enabled=", enabled, "refreshMinutes=", refreshMinutes);
 
     chrome.storage.local
       .set({ enabled, refreshMinutes })
       .then(async () => {
+        bgLog("WHATNOT_SAVE_SETTINGS: storage.set done, enabled=", enabled);
         await updateAlarmFromSettings();
         const hasTargetTab = await hasAnyWhatnotTab();
         const nextScanAt = await getNextAlarmTime();
         const scanStarted = enabled ? triggerImmediateScan() : false;
+        bgLog("WHATNOT_SAVE_SETTINGS: sendResponse ok, scanStarted=", scanStarted, "isScanning=", isScanInProgress, "nextScanAt=", nextScanAt);
         sendResponse({
           ok: true,
           scanStarted,
@@ -713,7 +749,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           isScanning: isScanInProgress
         });
       })
-      .catch(() => sendResponse({ ok: false }));
+      .catch((err) => {
+        bgLog("WHATNOT_SAVE_SETTINGS: CATCH error=", err?.message || String(err));
+        sendResponse({ ok: false });
+      });
 
     return true;
   }

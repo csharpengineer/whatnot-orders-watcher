@@ -263,6 +263,11 @@ async function loadStatus() {
   };
   renderCountdown();
   renderOrders(response?.orders || []);
+
+  if (Array.isArray(response?.bgDebugLog)) {
+    const el = document.getElementById("debugLog");
+    if (el) el.textContent = response.bgDebugLog.slice(-20).join("\n");
+  }
 }
 
 async function saveSettings() {
@@ -273,11 +278,13 @@ async function saveSettings() {
     enabled: enabledEl.checked,
     refreshMinutes
   };
+  console.log("[WOW UI] saveSettings sending:", payload);
 
   const response = await chrome.runtime.sendMessage({
     type: "WHATNOT_SAVE_SETTINGS",
     payload
   });
+  console.log("[WOW UI] saveSettings response:", response);
 
   latestStatus.enabled = Boolean(payload.enabled);
   latestStatus.isScanning = Boolean(response?.isScanning || (payload.enabled && response?.scanStarted));
