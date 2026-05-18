@@ -126,10 +126,7 @@ function extractListingImageUrl(listing, itemNode, node) {
     node?.image?.url,
     node?.thumbnailUrl,
     node?.coverImage?.url,
-    node?.placeholderImage?.url,
-    findImageUrlDeep(listing),
-    findImageUrlDeep(itemNode),
-    findImageUrlDeep(node)
+    node?.placeholderImage?.url
   ]);
 }
 

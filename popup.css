@@ -449,3 +449,13 @@ input[type="number"] {
   min-width: 0;
   display: block;
 }
+
+/* Visually reorder description to appear under the title — purely CSS, no DOM change. */
+/* Assign explicit order values to all .orderMeta children, then override desc to 3.   */
+.orderMeta > :nth-child(1) { order: 1; } /* sellerRow  */
+.orderMeta > :nth-child(2) { order: 2; } /* title      */
+.orderMeta > :nth-child(3) { order: 4; } /* purchased  */
+.orderMeta > :nth-child(4) { order: 5; } /* date       */
+.orderMeta > :nth-child(5) { order: 6; } /* shipped (or desc when no shipping) */
+.orderMeta > :nth-child(6) { order: 7; } /* desc (when both shipped + desc)    */
+.orderMeta > .orderLine:has(.orderDescText) { order: 3; }
