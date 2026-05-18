@@ -24,21 +24,23 @@
 }
 
 body {
-  margin: 0 0 14px 0;
+  margin: 0;
+  padding: 0;
+  height: 100%;
   font-family: "Segoe UI", Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
-  padding: 0 0 14px 0;
 }
 
 .container {
   width: 420px;
-  max-height: 760px;
-  padding: 14px;
+  height: 100%;
+  padding: 14px 14px 0;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow: hidden;
 }
 
 .panel {
@@ -47,6 +49,13 @@ body {
   background: var(--surface);
   overflow: hidden;
   flex-shrink: 0;
+}
+
+.panel.ordersPanel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .panelHeader {
@@ -246,15 +255,26 @@ input[type="number"] {
 }
 
 .ordersPanel {
-  margin-bottom: 10px;
+  margin-bottom: 14px;
+}
+
+.ordersPanel .panelBody {
+  padding: 0;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .ordersScroll {
+  flex: 1;
+  min-height: 0;
   border: none;
   border-radius: 0;
-  overflow: visible;
+  overflow-y: auto;
   background: transparent;
-  margin-bottom: 0;
+  padding: 12px;
 }
 
 .ordersList {
