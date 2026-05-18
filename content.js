@@ -250,7 +250,7 @@ const fallbackPurchasesBody = JSON.stringify({
   operationName: "GetMyPurchases",
   variables: {
     cursor: null,
-    first: 20,
+    first: 50,
     status: []
   },
   query:
