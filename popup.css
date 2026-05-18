@@ -416,6 +416,12 @@ input[type="number"] {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.sellerName:hover {
+  text-decoration: underline;
 }
 
 .orderShippedValue {

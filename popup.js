@@ -138,9 +138,12 @@ function renderOrders(orders) {
         sellerChip.appendChild(avatarWrap);
       }
 
-      const sellerName = document.createElement("span");
+      const sellerName = document.createElement("a");
       sellerName.className = "sellerName";
       sellerName.textContent = order.sellerUsername;
+      sellerName.href = `https://www.whatnot.com/user/${encodeURIComponent(order.sellerUsername)}`;
+      sellerName.target = "_blank";
+      sellerName.rel = "noopener noreferrer";
       sellerChip.appendChild(sellerName);
       sellerRow.appendChild(sellerChip);
     }
