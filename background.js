@@ -57,9 +57,8 @@ function decodeRequestBody(requestBody) {
 }
 
 function normalizeRefreshMinutes(value) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return 1;
-  if (parsed < 0.25) return 0.25;
+  const parsed = Math.round(Number(value));
+  if (!Number.isFinite(parsed) || parsed < 1) return 1;
   if (parsed > 60) return 60;
   return parsed;
 }

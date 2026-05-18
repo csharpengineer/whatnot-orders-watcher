@@ -261,10 +261,7 @@ async function loadStatus() {
 }
 
 async function saveSettings() {
-  if (!refreshMinutesEl.value.trim()) {
-    refreshMinutesEl.value = "1";
-  }
-  const refreshMinutes = Math.max(0.25, Number(refreshMinutesEl.value) || 1);
+  const refreshMinutes = Math.max(1, Math.round(Number(refreshMinutesEl.value) || 1));
   refreshMinutesEl.value = String(refreshMinutes);
 
   const payload = {
@@ -296,17 +293,13 @@ async function saveSettings() {
 }
 
 enabledEl.addEventListener("change", () => {
-  if (enabledEl.checked && !refreshMinutesEl.value.trim()) {
-    refreshMinutesEl.value = "1";
-  }
   saveSettings();
 });
 refreshMinutesEl.addEventListener("change", saveSettings);
 refreshMinutesEl.addEventListener("blur", () => {
-  if (!refreshMinutesEl.value.trim()) {
-    refreshMinutesEl.value = "1";
-    saveSettings();
-  }
+  const normalized = Math.max(1, Math.round(Number(refreshMinutesEl.value) || 1));
+  refreshMinutesEl.value = String(normalized);
+  saveSettings();
 });
 
 openPageEl.addEventListener("click", async () => {
