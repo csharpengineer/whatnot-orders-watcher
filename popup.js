@@ -5,6 +5,7 @@ const refreshOrdersEl = document.getElementById("refreshOrders");
 const scanStateEl = document.getElementById("scanState");
 const countdownStateEl = document.getElementById("countdownState");
 const ordersListEl = document.getElementById("ordersList");
+let lastRenderedOrdersJson = null;
 const DEFAULT_WHATNOT_PLACEHOLDER_IMAGE_URL =
   "https://www.whatnot.com/cdn/assets/045f9cb1550f8b9e/_next/static/media/empty_product_placeholder.9f3f94c5.png";
 
@@ -77,6 +78,9 @@ function getStatusClass(statusValue) {
 }
 
 function renderOrders(orders) {
+  const json = JSON.stringify(orders);
+  if (json === lastRenderedOrdersJson) return;
+  lastRenderedOrdersJson = json;
   ordersListEl.textContent = "";
 
   if (!Array.isArray(orders) || !orders.length) {
