@@ -235,12 +235,38 @@ async function queryTargetTabs() {
   });
 }
 
+/** Reload a discarded tab and wait for it to finish loading (max 15 s). */
+function wakeDiscardedTab(tabId) {
+  return new Promise((resolve) => {
+    const safety = setTimeout(() => {
+      chrome.tabs.onUpdated.removeListener(onUpdated);
+      bgLog("wakeDiscardedTab: safety timeout reached");
+      resolve();
+    }, 15000);
+    function onUpdated(id, changeInfo) {
+      if (id === tabId && changeInfo.status === "complete") {
+        clearTimeout(safety);
+        chrome.tabs.onUpdated.removeListener(onUpdated);
+        resolve();
+      }
+    }
+    chrome.tabs.onUpdated.addListener(onUpdated);
+    chrome.tabs.reload(tabId).catch(() => {
+      clearTimeout(safety);
+      chrome.tabs.onUpdated.removeListener(onUpdated);
+      resolve();
+    });
+  });
+}
+
 async function ensureContentScriptReady(tabId) {
   bgLog("ensureContentScriptReady: tabId=", tabId);
   try {
     const ping = await chrome.tabs.sendMessage(tabId, { type: "WHATNOT_PING" });
     if (ping?.ok) {
       bgLog("ensureContentScriptReady: first ping OK");
+      // Keep this tab awake so Chrome doesn't discard it between scans
+      chrome.tabs.update(tabId, { autoDiscardable: false }).catch(() => {});
       return true;
     }
     bgLog("ensureContentScriptReady: first ping no-ok response:", ping);
@@ -248,10 +274,33 @@ async function ensureContentScriptReady(tabId) {
     bgLog("ensureContentScriptReady: first ping threw:", e?.message);
   }
 
+  // Check whether the tab is discarded (put to sleep by Chrome to save memory).
+  // executeScript hangs indefinitely on a discarded tab, so we must reload it first.
+  // After reload the manifest auto-injects content.js, so no executeScript needed.
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (tab.discarded) {
+      bgLog("ensureContentScriptReady: tab is discarded — waking it");
+      await wakeDiscardedTab(tabId);
+      bgLog("ensureContentScriptReady: tab loaded after wake");
+      // Prevent future discards now that we know we need this tab active
+      chrome.tabs.update(tabId, { autoDiscardable: false }).catch(() => {});
+      try {
+        const ping = await chrome.tabs.sendMessage(tabId, { type: "WHATNOT_PING" });
+        bgLog("ensureContentScriptReady: post-wake ping:", ping);
+        if (ping?.ok) return true;
+      } catch (e) {
+        bgLog("ensureContentScriptReady: post-wake ping threw:", e?.message);
+      }
+      // Fall through to executeScript in case manifest injection wasn't enough
+    }
+  } catch (e) {
+    bgLog("ensureContentScriptReady: tab.get/wake failed:", e?.message);
+  }
+
   // After extension reload each tab gets a fresh isolated world for the new extension
   // version, so window.__whatnotOrdersWatcherLoaded starts undefined — no guard reset needed.
-  // Injecting via executeScript({ func }) hangs because Chrome serialises/evals the function
-  // before the new isolated world is fully ready; files injection works immediately.
+  // Injecting via executeScript({ func }) hangs; files injection works immediately.
   try {
     bgLog("ensureContentScriptReady: injecting content.js...");
     await chrome.scripting.executeScript({
