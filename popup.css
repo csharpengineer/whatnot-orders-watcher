@@ -1,0 +1,451 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-muted: #f1f3f5;
+  --border: #d8dee4;
+  --text: #111827;
+  --text-muted: #4b5563;
+  --primary: #2563eb;
+  --primary-strong: #1d4ed8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b0f16;
+    --surface: #131a25;
+    --surface-muted: #1a2332;
+    --border: #334155;
+    --text: #f3f4f6;
+    --text-muted: #c3ced9;
+    --primary: #3b82f6;
+    --primary-strong: #7db5ff;
+  }
+}
+
+body {
+  margin: 0 0 14px 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding: 0 0 14px 0;
+}
+
+.container {
+  width: 420px;
+  max-height: 760px;
+  padding: 14px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.panelHeader {
+  margin: 0;
+  padding: 11px 12px;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.panelBody {
+  border-top: 1px solid var(--border);
+  padding: 12px;
+}
+
+.controlsPanel .panelHeader {
+  background: var(--surface-muted);
+}
+
+.controlsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.openWhatnotButton {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.openWhatnotButton:hover {
+  border-color: var(--primary);
+}
+
+.controlsContent {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.1;
+  font-weight: 700;
+}
+
+.toggleRow,
+.column {
+  display: flex;
+  gap: 8px;
+}
+
+.toggleRow {
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+
+.column {
+  flex-direction: column;
+  color: var(--text-muted);
+}
+
+.controlsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.controlField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.controlToggleField {
+  justify-content: space-between;
+}
+
+.fieldLabel {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.controlToggleField .fieldLabel {
+  color: var(--text);
+}
+
+.controlToggleField .toggleControl {
+  align-self: flex-start;
+  margin-top: -2px;
+}
+
+input[type="number"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.toggleControl {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  display: inline-block;
+}
+
+.toggleControl input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggleSlider {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #9ca3af;
+  transition: background 0.2s ease;
+}
+
+.toggleSlider::before {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  top: 3px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 0.2s ease;
+}
+
+.toggleControl input:checked + .toggleSlider {
+  background: var(--primary);
+}
+
+.toggleControl input:checked + .toggleSlider::before {
+  transform: translateX(18px);
+}
+
+.actionButton {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.actionButton:hover {
+  border-color: var(--primary);
+}
+
+.statusBlock {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 20px;
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+#countdownState {
+  color: var(--primary-strong);
+  font-weight: 600;
+}
+
+#scanState {
+  text-align: right;
+}
+
+.ordersPanel .panelHeader {
+  background: var(--surface-muted);
+}
+
+.ordersPanel {
+  margin-bottom: 10px;
+}
+
+.ordersScroll {
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
+  margin-bottom: 0;
+}
+
+.ordersList {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.ordersList li {
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.ordersList li:last-child {
+  border-bottom: none;
+}
+
+.orderTitle {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  font-weight: 700;
+  margin-bottom: 2px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.orderTitle:hover {
+  text-decoration: underline;
+}
+
+.orderRow {
+  display: flex;
+  gap: 10px;
+}
+
+.orderIcon {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+  background: var(--surface-muted);
+}
+
+.orderContent {
+  min-width: 0;
+  flex: 1;
+}
+
+.orderMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statusBadge {
+  display: inline-flex;
+  width: fit-content;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.statusBadge.statusPreparing {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+}
+
+.statusBadge.statusDelivered {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+.statusBadge.statusPending {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
+}
+
+.statusBadge.statusCancelled {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.orderLine {
+  display: flex;
+  gap: 4px;
+}
+
+.orderLabel {
+  color: var(--text-muted);
+}
+
+.orderValue {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.orderSellerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sellerChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: auto;
+  min-width: 0;
+}
+
+.sellerAvatarWrap {
+  display: inline-block;
+  position: relative;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.sellerAvatarWrap--premier {
+  margin-right: 6px;
+}
+
+.sellerAvatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+.sellerPremierBadge {
+  position: absolute;
+  inset: -5px;
+  width: calc(100% + 10px);
+  height: calc(100% + 10px);
+  pointer-events: none;
+}
+
+.sellerName {
+  font-size: 0.8em;
+  opacity: 0.75;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+}
+
+.orderShippedValue {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.courierLogo {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.shippingEta {
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.orderDescText {
+  opacity: 0.55;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  display: block;
+}

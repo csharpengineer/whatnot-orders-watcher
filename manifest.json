@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Whatnot Orders Watcher",
+  "description": "Monitors Whatnot purchases and notifies on new orders.",
+  "version": "1.0.0",
+  "permissions": ["storage", "tabs", "alarms", "notifications", "webRequest", "scripting"],
+  "host_permissions": ["https://www.whatnot.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Whatnot Orders Watcher",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.whatnot.com/*"],
+      "js": ["page-network-capture.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://www.whatnot.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["page-network-capture.js"],
+      "matches": ["https://www.whatnot.com/*"]
+    }
+  ]
+}

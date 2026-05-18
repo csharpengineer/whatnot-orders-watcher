@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Whatnot Orders Watcher</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Whatnot Orders Watcher</h1>
+
+      <section class="panel controlsPanel">
+        <h2 class="panelHeader controlsHeader">
+          <span>Controls</span>
+          <button id="openPage" type="button" class="openWhatnotButton">Open Whatnot</button>
+        </h2>
+        <div class="panelBody controlsContent">
+          <div class="controlsGrid">
+            <label class="controlField controlToggleField" for="enabled">
+              <span class="fieldLabel">Service enabled</span>
+              <span class="toggleControl" aria-hidden="true">
+                <input id="enabled" type="checkbox" />
+                <span class="toggleSlider"></span>
+              </span>
+            </label>
+
+            <label class="controlField" for="refreshMinutes">
+              <span class="fieldLabel">Refresh interval (minutes)</span>
+              <input id="refreshMinutes" type="number" min="0.25" step="0.25" />
+            </label>
+          </div>
+
+          <section class="statusBlock">
+            <p id="countdownState" class="hint"></p>
+            <p id="scanState" class="hint"></p>
+          </section>
+        </div>
+      </section>
+
+      <section class="panel ordersPanel">
+        <h2 class="panelHeader">Found orders</h2>
+        <div class="panelBody">
+          <div class="ordersScroll">
+            <ul id="ordersList" class="ordersList"></ul>
+          </div>
+        </div>
+      </section>
+
+      <div>&nbsp;</div>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>
