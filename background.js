@@ -548,6 +548,10 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   await refreshAndCheckOrders();
 });
 
+chrome.action.onClicked.addListener(() => {
+  chrome.tabs.create({ url: chrome.runtime.getURL("popup.html") });
+});
+
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
     if (!isGetMyPurchasesUrl(details?.url)) return;
