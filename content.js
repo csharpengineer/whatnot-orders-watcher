@@ -1,4 +1,6 @@
 // Prevent duplicate injection (manifest auto-inject + scripting.executeScript fallback can both fire)
+// Wrapped in IIFE so `return` is valid regardless of injection method (manifest vs executeScript).
+(function () {
 if (!window.__whatnotOrdersWatcherLoaded) {
 window.__whatnotOrdersWatcherLoaded = true;
 
@@ -654,3 +656,4 @@ if (document.readyState === "complete") {
 }
 
 } // end double-injection guard
+})(); // end IIFE
