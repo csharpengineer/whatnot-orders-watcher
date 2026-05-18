@@ -716,6 +716,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message?.type === "WHATNOT_TRIGGER_SCAN") {
+    const scanStarted = triggerImmediateScan();
+    const hasTargetTab = await hasAnyWhatnotTab();
+    const nextScanAt = await getNextAlarmTime();
+    sendResponse({ ok: true, scanStarted, hasTargetTab, nextScanAt: Number(nextScanAt || 0), isScanning: isScanInProgress });
+    return false;
+  }
+
   if (message?.type === "WHATNOT_TEST_NOTIFICATION") {
     chrome.storage.local
       .get(defaultScanStatus)

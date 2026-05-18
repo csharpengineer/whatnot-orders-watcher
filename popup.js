@@ -1,6 +1,7 @@
 const enabledEl = document.getElementById("enabled");
 const refreshMinutesEl = document.getElementById("refreshMinutes");
 const openPageEl = document.getElementById("openPage");
+const refreshOrdersEl = document.getElementById("refreshOrders");
 const scanStateEl = document.getElementById("scanState");
 const countdownStateEl = document.getElementById("countdownState");
 const ordersListEl = document.getElementById("ordersList");
@@ -305,6 +306,18 @@ refreshMinutesEl.addEventListener("blur", () => {
 openPageEl.addEventListener("click", async () => {
   await chrome.runtime.sendMessage({ type: "WHATNOT_OPEN_TARGET" });
   await loadStatus();
+});
+
+refreshOrdersEl.addEventListener("click", async () => {
+  refreshOrdersEl.disabled = true;
+  refreshOrdersEl.textContent = "Refreshing…";
+  try {
+    await chrome.runtime.sendMessage({ type: "WHATNOT_TRIGGER_SCAN" });
+    await loadStatus();
+  } finally {
+    refreshOrdersEl.disabled = false;
+    refreshOrdersEl.textContent = "Refresh";
+  }
 });
 
 loadStatus().catch(() => {
