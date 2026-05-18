@@ -199,11 +199,6 @@ async function ensureInitialized() {
   if (isInitialized) return;
   isInitialized = true;
   await ensureKnownOrderIdsLoaded();
-  const settings = await getSettings();
-  await chrome.storage.local.set({
-    enabled: settings.enabled,
-    refreshMinutes: settings.refreshMinutes
-  });
   await updateAlarmFromSettings();
 }
 
