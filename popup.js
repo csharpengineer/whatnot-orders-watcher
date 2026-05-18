@@ -321,7 +321,8 @@ refreshOrdersEl.addEventListener("click", async () => {
 });
 
 loadStatus().catch(() => {
-  // keep popup usable if status call fails
+  // Service worker may still be starting up; retry once after a short delay
+  setTimeout(() => loadStatus().catch(() => {}), 1500);
 });
 
 setInterval(() => {

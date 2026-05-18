@@ -542,13 +542,21 @@ async function pollGraphQlPayload() {
 
     graphQlDebug.lastEvent = "poll_page_replay_timeout_fallback_fetch";
 
-    const response = await fetch(replayRequest.url, {
-      method: replayRequest.method,
-      headers: replayRequest.headers,
-      credentials: "include",
-      cache: "no-store",
-      body: replayRequest.method === "POST" ? replayRequest.body : undefined
-    });
+    const fetchAbort = new AbortController();
+    const fetchTimeoutId = setTimeout(() => fetchAbort.abort(), 15000);
+    let response;
+    try {
+      response = await fetch(replayRequest.url, {
+        method: replayRequest.method,
+        headers: replayRequest.headers,
+        credentials: "include",
+        cache: "no-store",
+        body: replayRequest.method === "POST" ? replayRequest.body : undefined,
+        signal: fetchAbort.signal
+      });
+    } finally {
+      clearTimeout(fetchTimeoutId);
+    }
 
     if (!response.ok) {
       graphQlDebug.lastEvent = "poll_http_error";
