@@ -261,11 +261,12 @@ function wakeDiscardedTab(tabId) {
 
 async function ensureContentScriptReady(tabId) {
   bgLog("ensureContentScriptReady: tabId=", tabId);
+
+  // Fast path: content script is already live
   try {
     const ping = await chrome.tabs.sendMessage(tabId, { type: "WHATNOT_PING" });
     if (ping?.ok) {
       bgLog("ensureContentScriptReady: first ping OK");
-      // Keep this tab awake so Chrome doesn't discard it between scans
       chrome.tabs.update(tabId, { autoDiscardable: false }).catch(() => {});
       return true;
     }
@@ -274,44 +275,67 @@ async function ensureContentScriptReady(tabId) {
     bgLog("ensureContentScriptReady: first ping threw:", e?.message);
   }
 
-  // Check whether the tab is discarded (put to sleep by Chrome to save memory).
-  // executeScript hangs indefinitely on a discarded tab, so we must reload it first.
-  // After reload the manifest auto-injects content.js, so no executeScript needed.
+  // Get tab state to decide recovery strategy
+  let tab;
   try {
-    const tab = await chrome.tabs.get(tabId);
-    if (tab.discarded) {
-      bgLog("ensureContentScriptReady: tab is discarded — waking it");
-      await wakeDiscardedTab(tabId);
-      bgLog("ensureContentScriptReady: tab loaded after wake");
-      // Prevent future discards now that we know we need this tab active
-      chrome.tabs.update(tabId, { autoDiscardable: false }).catch(() => {});
-      try {
-        const ping = await chrome.tabs.sendMessage(tabId, { type: "WHATNOT_PING" });
-        bgLog("ensureContentScriptReady: post-wake ping:", ping);
-        if (ping?.ok) return true;
-      } catch (e) {
-        bgLog("ensureContentScriptReady: post-wake ping threw:", e?.message);
-      }
-      // Fall through to executeScript in case manifest injection wasn't enough
-    }
+    tab = await chrome.tabs.get(tabId);
+    bgLog("ensureContentScriptReady: tab state: discarded=", tab.discarded, "status=", tab.status, "active=", tab.active);
   } catch (e) {
-    bgLog("ensureContentScriptReady: tab.get/wake failed:", e?.message);
-  }
-
-  // After extension reload each tab gets a fresh isolated world for the new extension
-  // version, so window.__whatnotOrdersWatcherLoaded starts undefined — no guard reset needed.
-  // Injecting via executeScript({ func }) hangs; files injection works immediately.
-  try {
-    bgLog("ensureContentScriptReady: injecting content.js...");
-    await chrome.scripting.executeScript({
-      target: { tabId },
-      files: ["content.js"]
-    });
-    bgLog("ensureContentScriptReady: content.js injected OK");
-  } catch (err) {
-    bgLog("ensureContentScriptReady: executeScript FAILED:", err?.message);
+    bgLog("ensureContentScriptReady: tab.get failed:", e?.message);
     return false;
   }
+
+  // Discarded tab (memory freed by Chrome) — must reload to restore JS context.
+  // Manifest will auto-inject content.js once load completes.
+  if (tab.discarded) {
+    bgLog("ensureContentScriptReady: tab is discarded — reloading to wake it");
+    await wakeDiscardedTab(tabId);
+    chrome.tabs.update(tabId, { autoDiscardable: false }).catch(() => {});
+    bgLog("ensureContentScriptReady: tab loaded after discard-wake");
+    try {
+      const ping = await chrome.tabs.sendMessage(tabId, { type: "WHATNOT_PING" });
+      bgLog("ensureContentScriptReady: post-discard-wake ping:", ping);
+      if (ping?.ok) return true;
+    } catch (e) {
+      bgLog("ensureContentScriptReady: post-discard-wake ping threw:", e?.message);
+    }
+    // Fall through to executeScript in case manifest injection wasn't sufficient
+  }
+
+  // Tab renderer may be frozen (Chrome throttles background tabs even when not discarded).
+  // executeScript hangs against a frozen renderer. Briefly activate the tab to unfreeze
+  // it, inject content.js, then restore focus to whatever the user was viewing.
+  let prevActiveTabId = null;
+  if (!tab.active) {
+    try {
+      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (activeTab?.id) prevActiveTabId = activeTab.id;
+      await chrome.tabs.update(tabId, { active: true });
+      bgLog("ensureContentScriptReady: activated tab to unfreeze renderer, prev=", prevActiveTabId);
+    } catch (e) {
+      bgLog("ensureContentScriptReady: activate failed:", e?.message);
+    }
+  }
+
+  // After extension reload each tab gets a fresh isolated world, so no guard reset needed.
+  let injected = false;
+  try {
+    bgLog("ensureContentScriptReady: injecting content.js...");
+    await chrome.scripting.executeScript({ target: { tabId }, files: ["content.js"] });
+    bgLog("ensureContentScriptReady: content.js injected OK");
+    chrome.tabs.update(tabId, { autoDiscardable: false }).catch(() => {});
+    injected = true;
+  } catch (err) {
+    bgLog("ensureContentScriptReady: executeScript FAILED:", err?.message);
+  }
+
+  // Restore the tab the user was looking at
+  if (prevActiveTabId !== null) {
+    chrome.tabs.update(prevActiveTabId, { active: true }).catch(() => {});
+    bgLog("ensureContentScriptReady: restored active tab", prevActiveTabId);
+  }
+
+  if (!injected) return false;
 
   try {
     const ping = await chrome.tabs.sendMessage(tabId, { type: "WHATNOT_PING" });
