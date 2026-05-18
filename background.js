@@ -232,6 +232,13 @@ async function ensureContentScriptReady(tabId) {
   }
 
   try {
+    // Clear any stale double-injection guard left by an orphaned context
+    // (e.g. after extension reload the old content script can't respond but its
+    // window.__whatnotOrdersWatcherLoaded flag still blocks a fresh injection)
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => { window.__whatnotOrdersWatcherLoaded = false; }
+    });
     await chrome.scripting.executeScript({
       target: { tabId },
       files: ["content.js"]
