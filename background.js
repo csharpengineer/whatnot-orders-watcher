@@ -718,10 +718,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message?.type === "WHATNOT_TRIGGER_SCAN") {
     const scanStarted = triggerImmediateScan();
-    const hasTargetTab = await hasAnyWhatnotTab();
-    const nextScanAt = await getNextAlarmTime();
-    sendResponse({ ok: true, scanStarted, hasTargetTab, nextScanAt: Number(nextScanAt || 0), isScanning: isScanInProgress });
-    return false;
+    Promise.all([hasAnyWhatnotTab(), getNextAlarmTime()])
+      .then(([hasTargetTab, nextScanAt]) => {
+        sendResponse({ ok: true, scanStarted, hasTargetTab, nextScanAt: Number(nextScanAt || 0), isScanning: isScanInProgress });
+      })
+      .catch(() => sendResponse({ ok: false }));
+    return true;
   }
 
   if (message?.type === "WHATNOT_TEST_NOTIFICATION") {
