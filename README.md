@@ -2,19 +2,20 @@
 
 Simple Manifest V3 extension that:
 
-- Works only for `https://www.whatnot.com/?activityTab=purchases`
+- Works on any `https://www.whatnot.com/` tab
 - Lets you enable/disable monitoring
 - Lets you set refresh interval in minutes (default `1`)
-- Opens/focuses the purchases page from the popup
+- Opens/focuses the Whatnot site from the popup
 - Refreshes on a timer when enabled
-- Detects new orders in the purchases panel and sends a system notification
+- Detects new orders via the GraphQL API and sends a system notification
 
 ## Files
 
 - `manifest.json` - extension manifest
 - `background.js` - timer, settings, refresh orchestration, notifications
-- `content.js` - extracts order IDs/titles from `/order/*` links
-- `popup.html`, `popup.js`, `popup.css` - simple toolbar popup configuration UI
+- `content.js` - intercepts GraphQL `GetMyPurchases` responses and polls the API
+- `page-network-capture.js` - injected into the page context to hook `fetch`/XHR
+- `popup.html`, `popup.js`, `popup.css` - toolbar popup UI
 
 ## Load in Chrome / Edge
 
@@ -25,14 +26,15 @@ Simple Manifest V3 extension that:
 
 ## Use
 
-1. Open extension popup.
+1. Open the extension popup.
 2. Set refresh interval (minutes).
 3. Enable service.
-4. Click **Open purchases page** if not already there.
-5. Click **Test notification** to verify browser/system notifications are working.
-6. Keep that tab open. On each refresh cycle, new unseen orders trigger a system notification.
+4. Click **Open Whatnot** if a Whatnot tab isn't already open.
+5. Keep that tab open. On each refresh cycle, new unseen orders trigger a system notification.
 
 ## Notes
 
-- New order state is held in extension memory (service worker lifetime).
-- First successful capture establishes baseline and does not notify existing rows.
+- Captured order state is stored in `sessionStorage` (page context), so it survives service worker restarts within the same browser session.
+- Only responses from the extension's own polling requests are processed; orders browsed manually on the site do not affect the list.
+- First successful capture establishes baseline and does not notify for existing orders.
+- Notifications are never sent for orders older than the most recently notified order time.
