@@ -543,7 +543,7 @@ async function pollGraphQlPayload() {
     graphQlDebug.lastEvent = "poll_page_replay_timeout_fallback_fetch";
 
     const fetchAbort = new AbortController();
-    const fetchTimeoutId = setTimeout(() => fetchAbort.abort(), 15000);
+    const fetchTimeoutId = setTimeout(() => fetchAbort.abort(), 8000);
     let response;
     try {
       response = await fetch(replayRequest.url, {

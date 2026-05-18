@@ -333,4 +333,4 @@ setInterval(() => {
   loadStatus().catch(() => {
     // keep popup responsive even if a background call fails intermittently
   });
-}, 5000);
+}, 2000);
