@@ -248,13 +248,12 @@ async function ensureContentScriptReady(tabId) {
     bgLog("ensureContentScriptReady: first ping threw:", e?.message);
   }
 
+  // After extension reload each tab gets a fresh isolated world for the new extension
+  // version, so window.__whatnotOrdersWatcherLoaded starts undefined — no guard reset needed.
+  // Injecting via executeScript({ func }) hangs because Chrome serialises/evals the function
+  // before the new isolated world is fully ready; files injection works immediately.
   try {
-    bgLog("ensureContentScriptReady: resetting guard...");
-    await chrome.scripting.executeScript({
-      target: { tabId },
-      func: () => { window.__whatnotOrdersWatcherLoaded = false; }
-    });
-    bgLog("ensureContentScriptReady: guard reset OK, injecting content.js...");
+    bgLog("ensureContentScriptReady: injecting content.js...");
     await chrome.scripting.executeScript({
       target: { tabId },
       files: ["content.js"]
