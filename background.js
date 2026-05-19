@@ -15,6 +15,7 @@ const defaultScanStatus = {
 };
 
 const SEEN_ORDER_IDS_STORAGE_KEY = "seenOrderIds";
+const GRAPHQL_AUTH_HEADERS_STORAGE_KEY = "graphQlAuthHeaders";
 
 let knownOrderIds = new Set();
 let knownOrderIdsLoaded = false;
@@ -216,6 +217,13 @@ async function ensureInitialized() {
   if (isInitialized) return;
   isInitialized = true;
   await ensureKnownOrderIdsLoaded();
+  // Restore persisted auth headers so the first scan after a SW restart
+  // doesn't need to reload the Whatnot tab to re-capture them.
+  const storedAuth = await chrome.storage.local.get({ [GRAPHQL_AUTH_HEADERS_STORAGE_KEY]: null });
+  if (storedAuth[GRAPHQL_AUTH_HEADERS_STORAGE_KEY]) {
+    lastKnownGraphQlHeaders = storedAuth[GRAPHQL_AUTH_HEADERS_STORAGE_KEY];
+    bgLog("ensureInitialized: restored graphQlAuthHeaders from storage");
+  }
   await updateAlarmFromSettings();
   bgLog("ensureInitialized: done");
 }
@@ -752,6 +760,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
     // Always snapshot auth headers from any GraphQL request so content.js
     // can borrow them even before a GetMyPurchases request is captured.
     lastKnownGraphQlHeaders = headersObject;
+    chrome.storage.local.set({ [GRAPHQL_AUTH_HEADERS_STORAGE_KEY]: headersObject }).catch(() => {});
 
     if (!isGetMyPurchasesUrl(details?.url)) return;
 
