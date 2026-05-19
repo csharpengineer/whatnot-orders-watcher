@@ -528,10 +528,46 @@ async function captureOrdersFromTab(tabId) {
   return orders;
 }
 
+/**
+ * If no GraphQL auth headers have been captured yet (e.g. the background
+ * service worker just restarted after the Whatnot page was already loaded),
+ * reload the tab so the page makes its normal startup GraphQL calls and the
+ * webRequest listener can snapshot the auth headers from them.
+ */
+async function ensureAuthHeadersBootstrapped(tabId) {
+  if (lastKnownGraphQlHeaders !== null) return;
+
+  bgLog("ensureAuthHeadersBootstrapped: no cached auth headers; reloading tab", tabId, "to trigger page GraphQL calls");
+  await wakeDiscardedTab(tabId); // reload + wait for tab status===complete
+
+  // Poll for up to 8 s for webRequest to fire and populate headers.
+  await new Promise((resolve) => {
+    const deadline = Date.now() + 8000;
+    const id = setInterval(() => {
+      if (lastKnownGraphQlHeaders !== null || Date.now() >= deadline) {
+        clearInterval(id);
+        resolve();
+      }
+    }, 150);
+  });
+
+  if (lastKnownGraphQlHeaders === null) {
+    bgLog("ensureAuthHeadersBootstrapped: timeout — still no auth headers after reload");
+  } else {
+    bgLog("ensureAuthHeadersBootstrapped: auth headers captured after reload");
+  }
+}
+
 async function captureOrdersFromAnyTab() {
   const tabs = await queryTargetTabs();
   if (!tabs.length) {
     throw new Error("Target tab not found");
+  }
+
+  // Bootstrap auth headers from the first available tab before scanning.
+  const firstTab = tabs.find((t) => t?.id);
+  if (firstTab) {
+    await ensureAuthHeadersBootstrapped(firstTab.id);
   }
 
   let lastError = null;
