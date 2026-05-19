@@ -411,12 +411,14 @@ async function getLatestGraphQlUrlFromBackground() {
     const response = await chrome.runtime.sendMessage({ type: "WHATNOT_GET_LAST_PURCHASES_URL" });
     return {
       url: typeof response?.url === "string" ? response.url : "",
-      template: response?.template || null
+      template: response?.template || null,
+      authHeaders: (response?.authHeaders && typeof response.authHeaders === "object") ? response.authHeaders : {}
     };
   } catch {
     return {
       url: "",
-      template: null
+      template: null,
+      authHeaders: {}
     };
   }
 }
@@ -433,23 +435,26 @@ function getLatestGraphQlUrlFromPerformance() {
   return "";
 }
 
-function buildReplayRequest(template, fallbackUrl) {
+function buildReplayRequest(template, fallbackUrl, fallbackAuthHeaders = {}) {
   const resolvedUrl = template?.url || fallbackUrl || "";
   const method = (template?.method || "POST").toUpperCase();
   const headers = template?.headers || {};
+  // Use template headers first, fall back to headers borrowed from any recent
+  // GraphQL request (captured by background's webRequest listener).
+  const auth = headers.authorization ? headers : fallbackAuthHeaders;
 
   const replayHeaders = {
-    accept: headers.accept || "*/*",
+    accept: headers.accept || auth.accept || "*/*",
     "content-type": headers["content-type"] || "application/json",
-    "x-client-timezone": headers["x-client-timezone"] || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-    "x-whatnot-app": headers["x-whatnot-app"] || "whatnot-web",
-    "x-whatnot-app-context": headers["x-whatnot-app-context"] || "next-js/browser",
-    "x-whatnot-app-pathname": headers["x-whatnot-app-pathname"] || window.location.pathname || "/",
-    "x-whatnot-app-screen": headers["x-whatnot-app-screen"] || window.location.pathname || "/"
+    "x-client-timezone": headers["x-client-timezone"] || auth["x-client-timezone"] || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+    "x-whatnot-app": headers["x-whatnot-app"] || auth["x-whatnot-app"] || "whatnot-web",
+    "x-whatnot-app-context": headers["x-whatnot-app-context"] || auth["x-whatnot-app-context"] || "next-js/browser",
+    "x-whatnot-app-pathname": headers["x-whatnot-app-pathname"] || auth["x-whatnot-app-pathname"] || window.location.pathname || "/",
+    "x-whatnot-app-screen": headers["x-whatnot-app-screen"] || auth["x-whatnot-app-screen"] || window.location.pathname || "/"
   };
 
-  if (headers.authorization) {
-    replayHeaders.authorization = headers.authorization;
+  if (auth.authorization) {
+    replayHeaders.authorization = auth.authorization;
   }
 
   const optionalHeaders = [
@@ -471,6 +476,7 @@ function buildReplayRequest(template, fallbackUrl) {
 
   for (const name of optionalHeaders) {
     if (headers[name]) replayHeaders[name] = headers[name];
+    else if (auth[name]) replayHeaders[name] = auth[name];
   }
 
   return {
@@ -489,7 +495,7 @@ async function pollGraphQlPayload() {
   const performanceUrl = getLatestGraphQlUrlFromPerformance();
   const url = backgroundState.url || performanceUrl || DEFAULT_GET_MY_PURCHASES_URL;
 
-  const ownRequest = buildReplayRequest(backgroundState.template, url);
+  const ownRequest = buildReplayRequest(backgroundState.template, url, backgroundState.authHeaders);
 
   graphQlDebug.lastPollUrl = url;
   graphQlDebug.lastPollAt = Date.now();

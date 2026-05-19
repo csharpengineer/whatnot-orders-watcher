@@ -22,6 +22,7 @@ let isInitialized = false;
 let isScanInProgress = false;
 let lastGetMyPurchasesUrl = "";
 let lastGetMyPurchasesTemplate = null;
+let lastKnownGraphQlHeaders = null;
 const pendingPurchasesRequests = new Map();
 const whatnotTabLoadedAt = new Map();
 
@@ -705,9 +706,6 @@ chrome.webRequest.onBeforeRequest.addListener(
 
 chrome.webRequest.onBeforeSendHeaders.addListener(
   (details) => {
-    if (!isGetMyPurchasesUrl(details?.url)) return;
-
-    const pending = pendingPurchasesRequests.get(details.requestId) || {};
     const requestHeaders = Array.isArray(details.requestHeaders) ? details.requestHeaders : [];
     const headersObject = {};
     for (const header of requestHeaders) {
@@ -715,6 +713,13 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
       headersObject[header.name.toLowerCase()] = header.value || "";
     }
 
+    // Always snapshot auth headers from any GraphQL request so content.js
+    // can borrow them even before a GetMyPurchases request is captured.
+    lastKnownGraphQlHeaders = headersObject;
+
+    if (!isGetMyPurchasesUrl(details?.url)) return;
+
+    const pending = pendingPurchasesRequests.get(details.requestId) || {};
     const template = {
       url: pending.url || details.url,
       method: pending.method || details.method || "POST",
@@ -919,7 +924,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === "WHATNOT_GET_LAST_PURCHASES_URL") {
     sendResponse({
       url: lastGetMyPurchasesUrl || "",
-      template: lastGetMyPurchasesTemplate
+      template: lastGetMyPurchasesTemplate,
+      authHeaders: lastKnownGraphQlHeaders
     });
     return false;
   }
