@@ -1,7 +1,6 @@
 (() => {
   const MESSAGE_TYPE = "WHATNOT_PURCHASES_CAPTURE";
   const DEBUG_MESSAGE_TYPE = "WHATNOT_PURCHASES_DEBUG";
-  const REPLAY_MESSAGE_TYPE = "WHATNOT_PURCHASES_REPLAY_REQUEST";
   const SOURCE_TAG = "whatnot-orders-watcher";
 
   if (window.__whatnotOrdersCaptureInstalled) return;
@@ -117,55 +116,4 @@
     return originalXhrSend.apply(this, args);
   };
 
-  window.addEventListener("message", async (event) => {
-    if (event.source !== window) return;
-    const data = event.data;
-    if (!data || data.source !== SOURCE_TAG || data.type !== REPLAY_MESSAGE_TYPE) return;
-
-    const request = data.payload || {};
-    const requestUrl = typeof request.url === "string" ? request.url : "";
-    if (!isGraphQlUrl(requestUrl)) {
-      emitDebug("replay_invalid_url", { url: requestUrl || "" });
-      return;
-    }
-
-    const method = String(request.method || "POST").toUpperCase();
-    const headers = request.headers && typeof request.headers === "object" ? request.headers : {};
-
-    emitDebug("replay_requested", { url: requestUrl, method });
-
-    try {
-      const response = await originalFetch.call(window, requestUrl, {
-        method,
-        headers,
-        credentials: "include",
-        mode: "cors",
-        cache: "no-store",
-        referrer: request.referrer || "https://www.whatnot.com/?activityTab=purchases",
-        body: method === "POST" ? request.body : undefined
-      });
-
-      const text = await response.text();
-      let payload;
-      try {
-        payload = JSON.parse(text);
-      } catch {
-        emitDebug("replay_not_json", { url: requestUrl, status: response.status });
-        return;
-      }
-
-      emitDebug("replay_json_ok", {
-        url: requestUrl,
-        status: response.status,
-        orderCount: getOrderCount(payload)
-      });
-
-      emitIfPurchasesPayload(payload, true);
-    } catch (error) {
-      emitDebug("replay_error", {
-        url: requestUrl,
-        error: error?.message || "Replay request failed"
-      });
-    }
-  });
 })();

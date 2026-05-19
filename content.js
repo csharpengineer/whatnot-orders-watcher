@@ -193,9 +193,7 @@ function formatMoneyFromCents(amountSafe, currency) {
   return `${dollars.toFixed(2)} ${String(currency || "").toUpperCase()}`.trim();
 }
 
-const GRAPHQL_CAPTURE_MESSAGE = "WHATNOT_PURCHASES_CAPTURE";
 const GRAPHQL_DEBUG_MESSAGE = "WHATNOT_PURCHASES_DEBUG";
-const GRAPHQL_REPLAY_REQUEST_MESSAGE = "WHATNOT_PURCHASES_REPLAY_REQUEST";
 const PAGE_SOURCE_TAG = "whatnot-orders-watcher";
 const INJECTED_SCRIPT_ID = "whatnot-orders-network-capture-fallback";
 const INJECTED_SCRIPT_FILE = "page-network-capture.js";
@@ -479,38 +477,9 @@ function buildReplayRequest(template, fallbackUrl) {
     url: resolvedUrl,
     method,
     headers: replayHeaders,
-    body: template?.body || fallbackPurchasesBody,
+    body: fallbackPurchasesBody,
     referrer: "https://www.whatnot.com/?activityTab=purchases"
   };
-}
-
-function requestReplayInPage(replayRequest) {
-  window.postMessage(
-    {
-      source: PAGE_SOURCE_TAG,
-      type: GRAPHQL_REPLAY_REQUEST_MESSAGE,
-      payload: replayRequest
-    },
-    "*"
-  );
-}
-
-function waitForPayloadIncrement(previousPayloadHits, timeoutMs = 2500) {
-  return new Promise((resolve) => {
-    const start = Date.now();
-    const timer = setInterval(() => {
-      if (graphQlDebug.payloadHits > previousPayloadHits) {
-        clearInterval(timer);
-        resolve(true);
-        return;
-      }
-
-      if (Date.now() - start >= timeoutMs) {
-        clearInterval(timer);
-        resolve(false);
-      }
-    }, 100);
-  });
 }
 
 async function pollGraphQlPayload() {
@@ -520,40 +489,26 @@ async function pollGraphQlPayload() {
   const performanceUrl = getLatestGraphQlUrlFromPerformance();
   const url = backgroundState.url || performanceUrl || DEFAULT_GET_MY_PURCHASES_URL;
 
-  const replayRequest = buildReplayRequest(backgroundState.template, url);
+  const ownRequest = buildReplayRequest(backgroundState.template, url);
 
   graphQlDebug.lastPollUrl = url;
   graphQlDebug.lastPollAt = Date.now();
-  graphQlDebug.lastEvent = backgroundState.url ? "poll_url_from_background" : "poll_url_from_performance";
+  graphQlDebug.lastEvent = "poll_own_fetch_start";
 
   isGraphQlPollInFlight = true;
   graphQlDebug.pollAttempts += 1;
 
   try {
-    const previousPayloadHits = graphQlDebug.payloadHits;
-    requestReplayInPage(replayRequest);
-
-    const pageReplayMerged = await waitForPayloadIncrement(previousPayloadHits, 2500);
-    if (pageReplayMerged) {
-      graphQlDebug.pollHits += 1;
-      lastFetchedGraphQlUrl = url;
-      graphQlDebug.lastEvent = "poll_payload_merged_page_replay";
-      graphQlDebug.lastError = "";
-      return;
-    }
-
-    graphQlDebug.lastEvent = "poll_page_replay_timeout_fallback_fetch";
-
     const fetchAbort = new AbortController();
     const fetchTimeoutId = setTimeout(() => fetchAbort.abort(), 8000);
     let response;
     try {
-      response = await fetch(replayRequest.url, {
-        method: replayRequest.method,
-        headers: replayRequest.headers,
+      response = await fetch(ownRequest.url, {
+        method: ownRequest.method,
+        headers: ownRequest.headers,
         credentials: "include",
         cache: "no-store",
-        body: replayRequest.method === "POST" ? replayRequest.body : undefined,
+        body: ownRequest.method === "POST" ? ownRequest.body : undefined,
         signal: fetchAbort.signal
       });
     } finally {
@@ -603,12 +558,6 @@ window.addEventListener("message", (event) => {
       graphQlDebug.lastError = payload.error || "GraphQL JSON parsing failed";
     }
     return;
-  }
-
-  if (data.type === GRAPHQL_CAPTURE_MESSAGE) {
-    if (data.isOwnRequest) {
-      mergeGraphQlPayload(data.payload, "payload_merged");
-    }
   }
 });
 
